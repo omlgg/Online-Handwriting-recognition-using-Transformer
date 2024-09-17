@@ -78,12 +78,12 @@ class CustomSchedule(keras.optimizers.schedules.LearningRateSchedule):
         """ linear warm up - linear decay """
         warmup_lr = (
             self.init_lr
-            + ((self.lr_after_warmup - self.init_lr) / (self.warmup_epochs - 1)) * epoch
+            + ((self.lr_after_warmup - self.init_lr) / (self.warmup_epochs - 1)) * tf.cast(epoch, tf.float32)
         )
         decay_lr = tf.math.maximum(
             self.final_lr,
             self.lr_after_warmup
-            - (epoch - self.warmup_epochs)
+            - (tf.cast(epoch, tf.float32) - self.warmup_epochs)
             * (self.lr_after_warmup - self.final_lr)
             / (self.decay_epochs),
         )

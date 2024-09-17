@@ -63,7 +63,8 @@ class Conv2dSubsampling(tf.keras.layers.Layer):
         self.time_reduction_factor = self.conv1.strides[0] + self.conv2.strides[0] #+self.conv3.strides[0]
         self.pos_emb = layers.Embedding(input_dim=500, output_dim=100)
 
-    def call(self, inputs, training=False, **kwargs):
+    def call(self, inputs, **kwargs):
+        training = True
         inputs =  self.lambda_1(inputs) 
         outputs = self.conv1(inputs, training=training)        
         outputs = self.conv_1_bn(outputs, training=training)        
@@ -95,7 +96,8 @@ class TransformerEncoder(layers.Layer):
         self.dropout1 = layers.Dropout(rate)
         self.dropout2 = layers.Dropout(rate)
 
-    def call(self, inputs, training):
+    def call(self, inputs):
+        training = True
         attn_output = self.att(inputs, inputs)
         attn_output = self.dropout1(attn_output, training=training)
         out1 = self.layernorm1(inputs + attn_output)
