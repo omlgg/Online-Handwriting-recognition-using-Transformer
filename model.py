@@ -1,11 +1,10 @@
-
 import tensorflow as tf
 from tensorflow import keras
 from tensorflow.keras import layers
 
 ## Define the Transformer Input Layer
 class TokenEmbedding(layers.Layer):
-    def __init__(self, num_vocab=98, maxlen=100, num_hid=40):
+    def __init__(self, num_vocab=300, maxlen=100, num_hid=40):
         super().__init__()
         self.emb = tf.keras.layers.Embedding(num_vocab, num_hid)
         self.pos_emb = layers.Embedding(input_dim=maxlen, output_dim=num_hid)

@@ -3,26 +3,85 @@ import tensorflow as tf
 from tensorflow import keras
 from tensorflow.keras import layers
 import pandas as pd
-
+import re
 
 
 # string.printable[:95]
 # '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ!"#$%&\'()*+,-./:;<=>?@[\\]^_`{|}~ '
 class VectorizeChar:
     def __init__(self, max_len=100):
-        self.vocab = (
-            ["-", "#", "<", ">"]
-            + list(string.printable[:95].replace('-','').replace('#','').replace('<','').replace('>',''))
-            # + [" ", ".", ",", "?"]
-        )
-        self.max_len = max_len
+        syntactic_tokens = [r"_", r"^", r'{', r'}', r'&', r'\\', ' ']
+        print(syntactic_tokens)
+        latin_letters = [chr(i) for i in range(ord('a'), ord('z') + 1)] + [chr(i) for i in range(ord('A'), ord('Z') + 1)]
+        print(latin_letters)
+        numbers = [str(i) for i in range(10)]
+        print(numbers)
+        blackboard = [r'\mathbb']
+        print(blackboard)
+        latin_punctuations_symbols = [',', ';', ':', '!', '?', '.', '(', ')', '[', ']', r'\{', r'\}', '*', '/', '+', '-', r'\_', r'\&', r'\#', r'\%', '|', r'\backslash']
+        print(latin_punctuations_symbols)
+        greek_letters = r'\alpha \beta \delta \Delta \epsilon \eta \chi \gamma \Gamma \iota \kappa \lambda \Lambda \nu \mu \omega \Omega \phi \Phi \pi \Pi \psi \Psi \rho \sigma \Sigma \tau \theta \Theta \upsilon \Upsilon \varphi \varpi \varsigma \vartheta \xi \Xi \zeta'
+        greek_letters = greek_letters.split(' ')
+        print(greek_letters)
+        math_constructs = r'\frac \sqrt \prod \sum \iint \int \oint'.split(' ')
+        print(math_constructs)
+        modifiers = r'\hat \tilde \vec \overline \underline \prime \dot \not'.split(' ')
+        print(modifiers)
+        delimiters = r'\langle \rangle \lceil \rceil \lfloor \rfloor \|'.split(' ')
+        print(delimiters)
+        conparisons = [r'\ge', r'\gg', r'\le', r'\ll', '<', '>']
+        print(conparisons)
+        eq_aprox = r'= \approx \cong \equiv \ne \propto \sim \simeq'.split(' ')
+        print(eq_aprox)
+        set_theory = r'\in \ni \notin \sqsubseteq \subset \subseteq \subsetneq \supset \supseteq \emptyset'.split(' ')
+        print(set_theory)
+        operators = r'\times \bigcap \bigcirc \bigcup \bigoplus \bigvee \bigwedge \cap \cup \div \mp \odot \ominus \oplus \otimes \pm \vee \wedge'.split(' ')
+        print(operators)
+        arrows = r'\hookrightarrow \leftarrow \leftrightarrow \Leftrightarrow \longrightarrow \mapsto \rightarrow \Rightarrow \rightleftharpoons \iff'.split(' ')
+        print(arrows)
+        dots = r'\bullet \cdot \circ'.split(' ')
+        print(dots)
+        others = r'\aleph \angle \dagger \exists \forall \hbar \infty \models \nabla \neg \partial \perp \top \triangle \triangleleft \triangleq \vdash \Vdash \vdots'.split(' ')
+        print(others)
+        print('\n\n')
+
+        total = syntactic_tokens + latin_letters + numbers + blackboard + latin_punctuations_symbols + greek_letters + math_constructs + modifiers + delimiters + conparisons + eq_aprox + set_theory + operators + arrows + dots + others
+        print(len(total))
+        print(total)
+        self.vocab = total
+        self.max_len = len(total)
         self.char_to_idx = {}
+        self._COMMAND_RE = re.compile(r'\\(mathbb{[a-zA-Z]}|begin{[a-z]+}|end{[a-z]+}|operatorname\*|[a-zA-Z]+|.)')
         for i, ch in enumerate(self.vocab):
             self.char_to_idx[ch] = i
 
+    def tokenize_expression(self, s: str) -> list[str]:
+        r"""Transform a Latex math string into a list of tokens.
+
+        Tokens are strings that are meaningful in the context of Latex
+        e.g. '1', r'\alpha', r'\frac'.
+
+        Args:
+            s: unicode input string (ex: r"\frac{1}{2}")
+
+        Returns:
+            tokens: list of tokens as unicode strings.
+        """
+        tokens = []
+        while s:
+            if s[0] == '\\':
+                tokens.append(self._COMMAND_RE.match(s).group(0))
+            else:
+                tokens.append(s[0])
+
+            s = s[len(tokens[-1]) :]
+
+        return tokens
+
     def __call__(self, text):
         # text = text[: self.max_len - 2]
-        text = "<" + text + ">"
+        # text = "<" + text + ">"
+        text = self.tokenize_expression(text)
         pad_len = self.max_len - len(text)
         return [self.char_to_idx.get(ch, 1) for ch in text] #+ [0] * pad_len
 
