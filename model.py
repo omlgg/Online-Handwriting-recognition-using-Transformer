@@ -224,7 +224,7 @@ class Transformer(keras.Model):
             preds = self([source, dec_input])
             one_hot = tf.one_hot(dec_target, depth=self.num_classes)
             mask = tf.math.logical_not(tf.math.equal(dec_target, 0))
-            loss = self.compiled_loss(one_hot, preds, sample_weight=mask)
+            loss = self.compute_loss(x = source, y = one_hot, y_pred = preds, sample_weight=mask)
         trainable_vars = self.trainable_variables
         gradients = tape.gradient(loss, trainable_vars)
         self.optimizer.apply_gradients(zip(gradients, trainable_vars))
