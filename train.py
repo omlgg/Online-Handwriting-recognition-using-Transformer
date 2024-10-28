@@ -9,6 +9,12 @@ from model import Transformer
 from utils import VectorizeChar, DisplayOutputs, CustomSchedule, path_to_features , wer, cer
 import pandas as pd
 
+MATHWRITING_ROOT_DIR='data/mathwriting-2024'
+TRAIN_DIR = os.path.join(MATHWRITING_ROOT_DIR, 'train')
+VAL_DIR = os.path.join(MATHWRITING_ROOT_DIR, 'valid')
+TEST_DIR = os.path.join(MATHWRITING_ROOT_DIR, 'test')
+SYMBOL_DIR = os.path.join(MATHWRITING_ROOT_DIR, 'symbols')
+
 train_df = pd.read_csv("data/train.csv")
 val_df = pd.read_csv("data/val.csv")
 test_df = pd.read_csv("data/test.csv")
@@ -16,11 +22,7 @@ train_df['file_path'] = train_df['file_path'].apply(lambda x: MATHWRITING_ROOT_D
 val_df['file_path'] = val_df['file_path'].apply(lambda x: MATHWRITING_ROOT_DIR+'/val/'+x.split('/')[-1].replace('.inkml','.bin'))
 train_df['file_path'] = train_df['file_path'].apply(lambda x: MATHWRITING_ROOT_DIR+'/'+x.split('/')[-2]+'/'+x.split('/')[-1].replace('.inkml','.bin'))
 
-MATHWRITING_ROOT_DIR='data/mathwriting-2024'
-TRAIN_DIR = os.path.join(MATHWRITING_ROOT_DIR, 'train')
-VAL_DIR = os.path.join(MATHWRITING_ROOT_DIR, 'valid')
-TEST_DIR = os.path.join(MATHWRITING_ROOT_DIR, 'test')
-SYMBOL_DIR = os.path.join(MATHWRITING_ROOT_DIR, 'symbols')
+
 
 
 def set_seeds(seed=42):
