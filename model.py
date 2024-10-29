@@ -60,7 +60,7 @@ class Conv2dSubsampling(tf.keras.layers.Layer):
         #     bias_regularizer=bias_regularizer
         # )
         self.time_reduction_factor = self.conv1.strides[0] + self.conv2.strides[0] #+self.conv3.strides[0]
-        self.pos_emb = layers.Embedding(input_dim=500, output_dim=100)
+        self.pos_emb = layers.Embedding(input_dim=2300, output_dim=100)
 
     def call(self, inputs, training = False, **kwargs):
         inputs =  self.lambda_1(inputs) 
