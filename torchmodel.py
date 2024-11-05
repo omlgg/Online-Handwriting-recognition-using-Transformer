@@ -102,4 +102,4 @@ class CTCModel(nn.Transformer):
         src = self.ink_encoder(src)
         output = self.encoder(src, src_key_padding_mask = src_key_padding_mask, mask=self.src_mask)
         output = self.decoder(output)
-        return F.log_softmax(output, dim=1)
+        return F.log_softmax(output, dim=-1)
