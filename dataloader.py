@@ -1,6 +1,8 @@
 from torch.utils.data import Dataset, DataLoader
 import numpy as np
 from torch.nn.utils.rnn import pad_sequence
+import torch
+from utils import VectorizeChar
 
 class StrokeDataset(Dataset):
     def __init__(self, data_dir, labels_df, transform=None):
