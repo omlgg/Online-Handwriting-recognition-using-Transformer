@@ -83,7 +83,8 @@ def train(model, data_loader, optimizer, criterion, device, debug = False, verbo
 
     return epoch_loss / len(data_loader)
 
-def evaluate(model, data_loader, criterion, device):
+def evaluate(model, data_loader, criterion, device, debug = True):
+    printed = not debug
     # works with batch size = 1
     model.eval()
     epoch_loss = 0
@@ -116,12 +117,20 @@ def evaluate(model, data_loader, criterion, device):
 
             output = model(src, src_msk)  # (batch_size, seq_len, output_dim)
             
+            if not printed:
+                print(tgt[0])
 
             tgt = tgt[:, 1:-1]
+            if not printed:
+                print(tgt[0])
 
             for i in range(output.shape[0]):
-                total_char += output_lengths[i]
-                error_char += levenshtein(greedy_decoder(output[i]), "".join([vocab[j] for j in tgt[i]]))
+                tgt_sentence = "".join([vocab[j] for j in tgt[i]])
+                if not printed:
+                    print(tgt_sentence)
+                    printed = True
+                total_char += len(tgt_sentence)
+                error_char += levenshtein(greedy_decoder(output[i]), tgt_sentence)
 
             output = output.permute(1, 0, 2) # (seq_len, batch_size, output_dimm)
             loss = criterion(output, tgt, input_lengths, output_lengths)
