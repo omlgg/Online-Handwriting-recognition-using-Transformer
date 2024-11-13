@@ -1,4 +1,32 @@
 import torch
+from utils import levenshtein
+from utils import VectorizeChar
+
+vectorizer = VectorizeChar(257)
+
+class GreedyCTCDecoder(torch.nn.Module):
+    def __init__(self, labels, blank=0):
+        super().__init__()
+        self.labels = labels
+        self.blank = blank
+
+    def forward(self, emission: torch.Tensor):
+        """Given a sequence emission over labels, get the best path
+        Args:
+          emission (Tensor): Logit tensors. Shape `[num_seq, num_label]`.
+
+        Returns:
+          List[str]: The resulting transcript
+        """
+        indices = torch.argmax(emission, dim=-1)  # [num_seq,]
+        indices = torch.unique_consecutive(indices, dim=-1)
+        indices = [i for i in indices if i != self.blank]
+        joined = "".join([self.labels[i] for i in indices])
+        return joined
+
+
+greedy_decoder = GreedyCTCDecoder(vectorizer.get_vocabulary())
+vocab = vectorizer.get_vocabulary()
 
 def train(model, data_loader, optimizer, criterion, device, debug = False, verbose_freq = 300):
     model.train()
@@ -56,8 +84,11 @@ def train(model, data_loader, optimizer, criterion, device, debug = False, verbo
     return epoch_loss / len(data_loader)
 
 def evaluate(model, data_loader, criterion, device):
+    # works with batch size = 1
     model.eval()
     epoch_loss = 0
+    total_char = 0
+    error_char = 0
 
     with torch.no_grad():
         # for src, tgt in data_loader:
@@ -84,10 +115,15 @@ def evaluate(model, data_loader, criterion, device):
             output_lengths = torch.sum(dim = 1, input = torch.exp(tgt_msk), dtype = torch.int32) - 2
 
             output = model(src, src_msk)  # (batch_size, seq_len, output_dim)
-            output = output.permute(1, 0, 2) # (seq_len, batch_size, output_dimm)
+            
 
             tgt = tgt[:, 1:-1]
 
+            for i in range(output.shape[0]):
+                total_char += output_lengths[i]
+                error_char += levenshtein(greedy_decoder(output[i]), "".join([vocab[j] for j in tgt[i]]))
+
+            output = output.permute(1, 0, 2) # (seq_len, batch_size, output_dimm)
             loss = criterion(output, tgt, input_lengths, output_lengths)
             epoch_loss += loss.item()
 
@@ -96,5 +132,5 @@ def evaluate(model, data_loader, criterion, device):
             del batch['tgt']
             del batch['src_msk']
             del batch['tgt_msk']
-
+    print(f'CER: {error_char/total_char}')
     return epoch_loss / len(data_loader)
