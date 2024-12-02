@@ -85,7 +85,7 @@ def train(model, data_loader, optimizer, criterion, device, debug = False, verbo
 
     return epoch_loss / len(data_loader)
 
-def evaluate(model, data_loader, criterion, device, debug = True):
+def evaluate(model, data_loader, criterion, device, debug = True, padding = 0, kernel_size = 1, stride = 1):
     printed = not debug
     # works with batch size = 1
     model.eval()
