@@ -28,7 +28,7 @@ class GreedyCTCDecoder(torch.nn.Module):
 greedy_decoder = GreedyCTCDecoder(vectorizer.get_vocabulary())
 vocab = vectorizer.get_vocabulary()
 
-def train(model, data_loader, optimizer, criterion, device, debug = False, verbose_freq = 300):
+def train(model, data_loader, optimizer, criterion, device, debug = False, verbose_freq = 300, padding = 0, kernel_size = 1, stride = 1):
     model.train()
     epoch_loss = 0
     step_cnt = 0
@@ -43,6 +43,8 @@ def train(model, data_loader, optimizer, criterion, device, debug = False, verbo
         src, tgt = src.to(device), tgt.to(device)
         input_lengths = torch.sum(dim = 1, input = torch.exp(src_msk), dtype = torch.int32)
         output_lengths = torch.sum(dim = 1, input = torch.exp(tgt_msk), dtype = torch.int32) - 2
+        for i in range(2):
+            input_lengths = (input_lengths + 2*padding - kernel_size)//stride + 1
 
         optimizer.zero_grad()
         if debug:
@@ -113,10 +115,12 @@ def evaluate(model, data_loader, criterion, device, debug = True):
             tgt_msk = tgt_msk.to(device)
             src, tgt = src.to(device), tgt.to(device)
             input_lengths = torch.sum(dim = 1, input = torch.exp(src_msk), dtype = torch.int32)
+            for i in range(2):
+                input_lengths = (input_lengths + 2*padding - kernel_size)//stride + 1
             output_lengths = torch.sum(dim = 1, input = torch.exp(tgt_msk), dtype = torch.int32) - 2
 
             output = model(src, src_msk)  # (batch_size, seq_len, output_dim)
-            
+
             if not printed:
                 print(tgt[0])
 

@@ -58,15 +58,18 @@ class Conv2dSubsampling(nn.Module):
         outputs = outputs + positions
         return outputs
 
-
+from torch.nn.utils.rnn import pad_sequence
 class CTCModel(nn.Transformer):
     """Container module with an encoder, a recurrent or transformer module, and a decoder."""
 
-    def __init__(self, ntoken, ninp, nhead, dim_feedforward, nlayers, dropout=0.1):
-        super(CTCModel, self).__init__(d_model=ninp, nhead=nhead, dim_feedforward=dim_feedforward, num_encoder_layers=nlayers, batch_first = True)
+    def __init__(self, ntoken, ninp, nhead, dim_feedforward, nlayers, activation = 'relu', dropout=0.1, strides = [1,2], kernel_size = [1,5], padding = [0, 2]):
+        super(CTCModel, self).__init__(d_model=ninp, nhead=nhead, dim_feedforward=dim_feedforward, num_encoder_layers=nlayers, dropout=dropout, activation=activation, batch_first = True)
         self.model_type = 'Transformer'
         self.src_mask = None
-        self.ink_encoder = Conv2dSubsampling(filters=20, output_dim = ninp, strides=[1,2], kernel_size=[1,5])
+        self.strides = strides
+        self.kernel_size = kernel_size
+        self.padding = padding
+        self.ink_encoder = Conv2dSubsampling(filters=20, output_dim = ninp, strides=strides, kernel_size=kernel_size, padding = padding)
 
         self.input_emb = nn.Embedding(ntoken, ninp)
         self.ninp = ninp
@@ -84,6 +87,8 @@ class CTCModel(nn.Transformer):
         nn.init.uniform_(self.decoder.weight, -initrange, initrange)
 
     def forward(self, src, src_key_padding_mask, has_mask=True):
+        #src = self.input_emb(src) * math.sqrt(self.ninp)
+        src = self.ink_encoder(src)
         if has_mask:
             if self.batch_first:
                 seq_len = src.size(1)
@@ -97,9 +102,19 @@ class CTCModel(nn.Transformer):
                 #print(self.src_mask)
         else:
             self.src_mask = None
+        # Process src_key_padding_mask to padding and conv values
+        sentence_lens = torch.sum(input = torch.exp(src_key_padding_mask), dim = 1, dtype=torch.int)
 
-        #src = self.input_emb(src) * math.sqrt(self.ninp)
-        src = self.ink_encoder(src)
+        for i in range(2):
+            sentence_lens += 2*self.padding[0] - self.kernel_size[0]
+            sentence_lens = sentence_lens//self.strides[0] + 1
+        #print(sentence_lens)
+        #print(src.device)
+
+        src_key_padding_mask = [torch.zeros(sentence_lens[i]) for i in range(len(src_key_padding_mask))]
+        src_key_padding_mask = pad_sequence(src_key_padding_mask, batch_first=True, padding_value=float('-inf')).to(src.device)
+
+
         output = self.encoder(src, src_key_padding_mask = src_key_padding_mask, mask=self.src_mask)
         output = self.decoder(output)
         return F.log_softmax(output, dim=-1)
